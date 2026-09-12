@@ -1,6 +1,6 @@
 ﻿namespace high_load_api.Controllers
 {
-    public class OrderController
+    public class CartsController
     {
     }
 }
