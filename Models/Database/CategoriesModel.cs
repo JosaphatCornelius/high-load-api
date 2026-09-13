@@ -4,7 +4,6 @@
     {
         public long ID { get; set; }
         public required string Name { get; set; }
-
         public List<ProductsModel> Product { get; set; } = [];
     }
 }
