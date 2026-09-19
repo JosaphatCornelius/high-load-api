@@ -17,17 +17,24 @@ namespace high_load_api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<UsersDTO>> GetUsers()
+        public async Task<ActionResult<UsersDTO>> GetUsers([FromQuery] UsersFilter filter, CancellationToken cancellationToken)
         {
             try
             {
-                UsersDTO userData = await _usersService.GetUsers(new UsersFilter());
+                var userData = await _usersService.GetUsers(filter, cancellationToken);
 
                 return Ok(userData);
             }
+            catch (ArgumentException exception)
+            {
+                return BadRequest(exception.Message);
+            }
             catch (Exception exception)
             {
-                return NotFound(exception);
+                return Problem(
+                    detail: exception.Message,
+                    title: "Internal Server Error"
+                 );
             }
         }
     }

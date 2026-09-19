@@ -5,6 +5,6 @@ namespace high_load_api.Types
 {
     public interface IUsersService
     {
-        public Task<UsersDTO> GetUsers(UsersFilter filter);
+        public Task<List<UsersDTO>> GetUsers(UsersFilter filter, CancellationToken cancellationToken);
     }
 }
