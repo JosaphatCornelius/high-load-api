@@ -1,6 +1,8 @@
 
+using high_load_api.Models.Database.Context;
 using high_load_api.Services;
 using high_load_api.Types;
+using Microsoft.EntityFrameworkCore;
 
 namespace high_load_api
 {
@@ -10,11 +12,16 @@ namespace high_load_api
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            var connectionString = builder.Configuration.GetConnectionString("ECommerceConn");
+
             // Add services to the container.
 
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
+
+            builder.Services.AddDbContextPool<ECommerceDBContext>(options =>
+                options.UseNpgsql(connectionString));
 
             builder.Services.AddScoped<IUsersService, UsersService>();
 
@@ -29,7 +36,6 @@ namespace high_load_api
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
 
             app.MapControllers();
 
