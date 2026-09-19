@@ -1,4 +1,7 @@
 
+using high_load_api.Services;
+using high_load_api.Types;
+
 namespace high_load_api
 {
     public class Program
@@ -12,6 +15,8 @@ namespace high_load_api
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
+
+            builder.Services.AddScoped<IUsersService, UsersService>();
 
             var app = builder.Build();
 
