@@ -1,4 +1,5 @@
-﻿using high_load_api.Models.Database.Context;
+﻿using high_load_api.Models.Database;
+using high_load_api.Models.Database.Context;
 using high_load_api.Models.DTO;
 using high_load_api.Models.Filters;
 using high_load_api.Types;
@@ -44,6 +45,11 @@ namespace high_load_api.Services
                 .ToListAsync(cancellationToken);
 
             return users;
+        }
+
+        public async Task<UsersModel> GetUserDetail(long userID, CancellationToken cancellationToken)
+        {
+            return await _eCommDBContext.Users.AsNoTracking().FirstAsync(u => u.ID == userID);
         }
     }
 }
