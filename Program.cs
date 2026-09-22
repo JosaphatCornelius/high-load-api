@@ -1,6 +1,8 @@
 
 using high_load_api.Middleware;
 using high_load_api.Models.Database.Context;
+using high_load_api.Services;
+using high_load_api.Types;
 using Microsoft.EntityFrameworkCore;
 
 namespace high_load_api
@@ -25,6 +27,8 @@ namespace high_load_api
             builder.Services.AddProblemDetails();
 
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+            builder.Services.AddScoped<IUsersService, UsersService>();
 
             var app = builder.Build();
 
