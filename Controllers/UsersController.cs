@@ -18,47 +18,19 @@ namespace high_load_api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<UsersDTO>> GetUsers([FromQuery] UsersFilter filter, CancellationToken cancellationToken)
+        public async Task<ActionResult<List<UsersDTO>>> GetUsers([FromQuery] UsersFilter filter, CancellationToken cancellationToken)
         {
-            try
-            {
-                var userData = await _usersService.GetUsers(filter, cancellationToken);
+            var userData = await _usersService.GetUsers(filter, cancellationToken);
 
-                return Ok(userData);
-            }
-            catch (ArgumentException exception)
-            {
-                return BadRequest(exception.Message);
-            }
-            catch (Exception exception)
-            {
-                return Problem(
-                    detail: exception.Message,
-                    title: "Internal Server Error"
-                 );
-            }
+            return Ok(userData);
         }
 
-        [HttpGet("details")]
-        public async Task<ActionResult<UsersModel>> GetUserDetail([FromQuery] long userID, CancellationToken cancellationToken)
+        [HttpGet("{userID}")]
+        public async Task<ActionResult<UsersModel>> GetUserDetail([FromRoute] long userID, CancellationToken cancellationToken)
         {
-            try
-            {
-                var userData = await _usersService.GetUserDetail(userID, cancellationToken);
+            var userData = await _usersService.GetUserDetail(userID, cancellationToken);
 
-                return Ok(userData);
-            }
-            catch (ArgumentException exception)
-            {
-                return BadRequest(exception.Message);
-            }
-            catch (Exception exception)
-            {
-                return Problem(
-                    detail: exception.Message,
-                    title: "Internal Server Error"
-                 );
-            }
+            return Ok(userData);
         }
     }
 }

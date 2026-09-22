@@ -47,9 +47,11 @@ namespace high_load_api.Services
             return users;
         }
 
-        public async Task<UsersModel> GetUserDetail(long userID, CancellationToken cancellationToken)
+        public async Task<UsersModel?> GetUserDetail(long userID, CancellationToken cancellationToken)
         {
-            return await _eCommDBContext.Users.AsNoTracking().FirstAsync(u => u.ID == userID);
+            var user = await _eCommDBContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.ID == userID, cancellationToken);
+
+            return user ?? throw new KeyNotFoundException($"User with ID {userID} is not found");
         }
     }
 }

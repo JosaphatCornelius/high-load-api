@@ -7,6 +7,6 @@ namespace high_load_api.Types
     public interface IUsersService
     {
         public Task<List<UsersDTO>> GetUsers(UsersFilter filter, CancellationToken cancellationToken);
-        public Task<UsersModel> GetUserDetail(long userID, CancellationToken cancellationToken);
+        public Task<UsersModel?> GetUserDetail(long userID, CancellationToken cancellationToken);
     }
 }
