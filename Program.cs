@@ -1,4 +1,5 @@
 
+using high_load_api.Middleware;
 using high_load_api.Models.Database.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,6 +21,10 @@ namespace high_load_api
 
             builder.Services.AddDbContextPool<ECommerceDBContext>(options =>
                 options.UseNpgsql(connectionString));
+
+            builder.Services.AddProblemDetails();
+
+            builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
             var app = builder.Build();
 
