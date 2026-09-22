@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+﻿using high_load_api.Models.Responses;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -21,53 +22,54 @@ namespace high_load_api.Middleware
         {
             _logger.LogError(exception, "An exception occurred: {Message}", exception.Message);
 
-            var problemDetails = new ProblemDetails
+            var response = new ResponsesEnvelope<object>
             {
-                Instance = httpContext.Request.Path
+                Status = "Error",
+                Data = []
             };
 
             switch (exception)
             {
                 // Missing or Invalid Resources
-                case KeyNotFoundException:
-                    problemDetails.Status = StatusCodes.Status404NotFound;
-                    problemDetails.Title = "Resource Not Found";
-                    problemDetails.Detail = "The requested resource could not be found.";
+                case KeyNotFoundException keyNotFoundEx:
+                    response.Code = StatusCodes.Status404NotFound;
+                    response.Message = "Resource Not Found";
+                    _logger.LogWarning("Resource not found: {ErrorMessage}", keyNotFoundEx.Message);
                     break;
 
                 // Bad Input / Validation Errors
                 case ArgumentNullException argNullEx:
-                    problemDetails.Status = StatusCodes.Status400BadRequest;
-                    problemDetails.Title = "Missing Argument";
-                    problemDetails.Detail = argNullEx.Message;
+                    response.Code = StatusCodes.Status400BadRequest;
+                    response.Message = "Missing Argument";
+                    _logger.LogWarning("Missing argument: {ErrorMessage}", argNullEx.Message);
                     break;
 
                 case ArgumentException argEx:
-                    problemDetails.Status = StatusCodes.Status400BadRequest;
-                    problemDetails.Title = "Bad Request";
-                    problemDetails.Detail = argEx.Message;
+                    response.Code = StatusCodes.Status400BadRequest;
+                    response.Message = "Bad Request";
+                    _logger.LogWarning("Bad argument: {ErrorMessage}", argEx.Message);
                     break;
 
                 // Business Rule Violations
                 case InvalidOperationException invalidOpEx:
                     // 422 is standard for semantic/business logic errors where the syntax is valid
-                    problemDetails.Status = StatusCodes.Status422UnprocessableEntity;
-                    problemDetails.Title = "Unprocessable Entity";
-                    problemDetails.Detail = invalidOpEx.Message;
+                    response.Code = StatusCodes.Status422UnprocessableEntity;
+                    response.Message = "Unprocessable Entity";
+                    _logger.LogWarning("Unprocessable entity: {ErrorMessage}", invalidOpEx.Message);
                     break;
 
                 // Access / Permission Issues
                 case UnauthorizedAccessException:
-                    problemDetails.Status = StatusCodes.Status403Forbidden;
-                    problemDetails.Title = "Forbidden";
-                    problemDetails.Detail = "You do not have permission to perform this action.";
+                    response.Code = StatusCodes.Status403Forbidden;
+                    response.Message = "Forbidden";
+                    _logger.LogWarning("Unauthorized access attempt.");
                     break;
 
                 // Database Race Conditions
                 case DbUpdateConcurrencyException:
-                    problemDetails.Status = StatusCodes.Status409Conflict;
-                    problemDetails.Title = "Data Conflict";
-                    problemDetails.Detail = "The resource was modified by another process. Please reload and try again.";
+                    response.Code = StatusCodes.Status409Conflict;
+                    response.Message = "Data Conflict";
+                    _logger.LogError("Database concurrency conflict occurred.");
                     break;
 
                 // PostgreSQL Specific Database Violations
@@ -75,21 +77,19 @@ namespace high_load_api.Middleware
                     switch (pgEx.SqlState)
                     {
                         case "23505": // Unique constraint violation (e.g., duplicate email)
-                            problemDetails.Status = StatusCodes.Status409Conflict;
-                            problemDetails.Title = "Resource already exists";
-                            problemDetails.Detail = "A record with this unique identifier already exists.";
+                            response.Code = StatusCodes.Status409Conflict;
+                            response.Message = "Resource already exists";
                             break;
 
                         case "23503": // Foreign key violation (e.g., CartID doesn't exist)
-                            problemDetails.Status = StatusCodes.Status400BadRequest;
-                            problemDetails.Title = "Invalid Reference";
-                            problemDetails.Detail = "The operation references a record that does not exist.";
+                            response.Code = StatusCodes.Status400BadRequest;
+                            response.Message = "Invalid Reference";
                             break;
 
                         default:
-                            problemDetails.Status = StatusCodes.Status500InternalServerError;
-                            problemDetails.Title = "Database Error";
-                            problemDetails.Detail = "An unexpected database error occurred.";
+                            response.Code = StatusCodes.Status500InternalServerError;
+                            response.Message = "Database Error";
+                            _logger.LogError(pgEx, "PostgreSQL error occurred: {ErrorMessage}", pgEx.Message);
                             break;
                     }
                     break;
@@ -97,21 +97,21 @@ namespace high_load_api.Middleware
                 // Client Disconnects
                 case OperationCanceledException:
                     // 499 Client Closed Request is the Nginx/APISIX standard
-                    problemDetails.Status = 499;
-                    problemDetails.Title = "Request Canceled";
-                    problemDetails.Detail = "The request was canceled by the client.";
+                    response.Code = 499;
+                    response.Message = "Request Canceled";
+                    _logger.LogInformation("Request cancelled by client.");
                     break;
 
                 // Unhandled Fatal Errors
                 default:
-                    problemDetails.Status = StatusCodes.Status500InternalServerError;
-                    problemDetails.Title = "Internal Server Error";
-                    problemDetails.Detail = "An unexpected error occurred processing your request.";
+                    response.Code = StatusCodes.Status500InternalServerError;
+                    response.Message = "Internal Server Error";
+                    _logger.LogError(exception, "Unhandled system exception: {ErrorMessage}", exception.Message);
                     break;
             }
 
-            httpContext.Response.StatusCode = problemDetails.Status.Value;
-            await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+            httpContext.Response.StatusCode = response.Code;
+            await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
 
             return true;
         }
